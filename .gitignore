@@ -1,0 +1,4 @@
+node_modules
+*.js
+covid-api-key.txt
+discord-api-key.txt

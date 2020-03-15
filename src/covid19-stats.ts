@@ -3,4 +3,5 @@ export interface Covid19Stats {
 	cases: number;
 	deaths: number;
 	recoveries: number;
+	lastUpdate: string;
 }

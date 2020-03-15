@@ -1,10 +1,12 @@
 import fs from 'fs';
+import path from 'path';
 import unirest from 'unirest';
 import { Covid19Stats } from './covid19-stats';
 
 interface ApiRes {
 	data: {
 		covid19Stats: {
+			provience: string;
 			country: string;
 			lastUpdate: string;
 			confirmed: number;
@@ -14,7 +16,7 @@ interface ApiRes {
 	}
 }
 
-const apiKey: string = fs.readFileSync('../../covid-api-key.txt', 'utf8');
+const apiKey: string = fs.readFileSync(path.join(__dirname, '../../covid-api-key.txt'), 'utf8');
 
 function apiReq(country?:string) {
 	const req = unirest('GET', 'https://covid-19-coronavirus-statistics.p.rapidapi.com/v1/stats');
@@ -40,19 +42,16 @@ export async function getAll(): Promise<Covid19Stats|Error> {
 	});
 	if (!(res instanceof Error)) {
 		try {
-			const gotCountries: string[] = [];
 			const totals: Covid19Stats = {
 				cases: 0,
 				deaths: 0,
 				recoveries: 0,
+				lastUpdate: res.data.covid19Stats[0].lastUpdate,
 			}
-			res.data.covid19Stats.forEach((country):void => {
-				if (!gotCountries.includes(country.country)) {
-					gotCountries.push(country.country);
-					totals.cases += country.confirmed;
-					totals.deaths += country.deaths;
-					totals.recoveries += country.recovered;
-				}
+			res.data.covid19Stats.forEach((provience):void => {
+				totals.cases += provience.confirmed;
+				totals.deaths += provience.deaths;
+				totals.recoveries += provience.recovered;
 			});
 			return totals;
 		} catch(err) {
@@ -73,12 +72,18 @@ export async function getCountry(country: string): Promise<Covid19Stats|Error> {
 	});
 	if (!(res instanceof Error)) {
 		try {
-			return {
-				country: res.data.covid19Stats[0].country,
-				cases: res.data.covid19Stats[0].confirmed,
-				deaths: res.data.covid19Stats[0].deaths,
-				recoveries: res.data.covid19Stats[0].recovered,
+			const totals: Covid19Stats = {
+				cases: 0,
+				deaths: 0,
+				recoveries: 0,
+				lastUpdate: res.data.covid19Stats[0].lastUpdate,
 			}
+			res.data.covid19Stats.forEach((provience):void => {
+				totals.cases += provience.confirmed;
+				totals.deaths += provience.deaths;
+				totals.recoveries += provience.recovered;
+			});
+			return totals;
 		} catch(err) {
 			return new Error("(●︿●) Encountered a JavaScript error... Sorry...");
 		}

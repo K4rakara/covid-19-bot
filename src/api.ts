@@ -6,7 +6,7 @@ import { Covid19Stats } from './covid19-stats';
 interface ApiRes {
 	data: {
 		covid19Stats: {
-			provience: string;
+			province: string;
 			country: string;
 			lastUpdate: string;
 			confirmed: number;
@@ -48,10 +48,10 @@ export async function getAll(): Promise<Covid19Stats|Error> {
 				recoveries: 0,
 				lastUpdate: res.data.covid19Stats[0].lastUpdate,
 			}
-			res.data.covid19Stats.forEach((provience):void => {
-				totals.cases += provience.confirmed;
-				totals.deaths += provience.deaths;
-				totals.recoveries += provience.recovered;
+			res.data.covid19Stats.forEach((province):void => {
+				totals.cases += province.confirmed;
+				totals.deaths += province.deaths;
+				totals.recoveries += province.recovered;
 			});
 			return totals;
 		} catch(err) {
@@ -78,10 +78,42 @@ export async function getCountry(country: string): Promise<Covid19Stats|Error> {
 				recoveries: 0,
 				lastUpdate: res.data.covid19Stats[0].lastUpdate,
 			}
-			res.data.covid19Stats.forEach((provience):void => {
-				totals.cases += provience.confirmed;
-				totals.deaths += provience.deaths;
-				totals.recoveries += provience.recovered;
+			res.data.covid19Stats.forEach((province):void => {
+				totals.cases += province.confirmed;
+				totals.deaths += province.deaths;
+				totals.recoveries += province.recovered;
+			});
+			return totals;
+		} catch(err) {
+			return new Error("(●︿●) Encountered a JavaScript error... Sorry...");
+		}
+	} else {
+		return new Error("(●︿●) Encountered an API error... Sorry...");
+	}
+}
+
+export async function getProvince(country: string, provinceName: string): Promise<Covid19Stats|Error> {
+	const req = apiReq(country);
+	const res = await new Promise((resolve: (value: ApiRes|Error) => any) => {
+		req.end(function(response) {
+			if (response.error) resolve(new Error(response.error));
+			resolve(response.body);
+		});
+	});
+	if (!(res instanceof Error)) {
+		try {
+			const totals: Covid19Stats = {
+				cases: 0,
+				deaths: 0,
+				recoveries: 0,
+				lastUpdate: res.data.covid19Stats[0].lastUpdate,
+			}
+			res.data.covid19Stats.forEach((province):void => {
+				if (province.province == provinceName) {
+					totals.cases += province.confirmed;
+					totals.deaths += province.deaths;
+					totals.recoveries += province.recovered;
+				}
 			});
 			return totals;
 		} catch(err) {

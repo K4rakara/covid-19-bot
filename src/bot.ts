@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import discord from 'discord.js';
 import chalk from 'chalk';
 import { getAll, getCountry, getProvince } from './api';
@@ -21,6 +23,9 @@ class CovidStatsWidget extends discord.MessageEmbed {
 	}
 }
 
+const validCountries = JSON.parse(fs.readFileSync(path.join(__dirname, '../../countries.json'), 'utf8'));
+const validCountryAliases = JSON.parse(fs.readFileSync(path.join(__dirname, '../../country-aliases.json'), 'utf8'));
+
 client.on('message', (message: discord.Message): void => {
 	(async (): Promise<void> => {
 		try {
@@ -35,6 +40,7 @@ client.on('message', (message: discord.Message): void => {
 						fields: [
 							{ name: 'covid?help', value: 'Displays this help menu.' },
 							{ name: 'covid?source', value: 'Provides a direct link to the source of this bots data.' },
+							{ name: 'covid?countries', value: 'Lists out every country that can be used with this bot.' },
 							{ name: 'covid?all', value: 'Displays worldwide statistics.' },
 							{ name: 'covid?country', value: 'Displays statistics for `country`.\nExample: ```covid?America```' },
 							{ name: 'covid?country?province', value: 'Displays statistics for `province`. In the case of the US, "province" refers to states.\nExample: ```covid?America?New York```' },
@@ -43,6 +49,8 @@ client.on('message', (message: discord.Message): void => {
 					}));
 				} else if (split[0] != null && split[0].toLowerCase() === 'source') {
 					message.channel.send('Here ya\' go! https://github.com/CSSEGISandData/COVID-19');
+				}  else if (split[0] != null && split[0].toLowerCase() === 'countries') {
+					message.channel.send(`Heres a list of every country I know: ${Object.keys(validCountries).join(", ")}`)
 				} else if (split[0] != null && split[0].toLowerCase() === 'all') {
 					const apiRes = await getAll();
 					if (!(apiRes instanceof Error)) {
@@ -51,26 +59,40 @@ client.on('message', (message: discord.Message): void => {
 						message.channel.send(apiRes.message);
 					}
 				} else if (split[0] != null) {
-					split.forEach((splitString: string): void => {
-						// Preserve country codes (US, EU, JP, etc)
-						if (splitString.length !== 2) {
-							splitString = splitString.substring(0, 1).toUpperCase() + splitString.substring(1).toLowerCase();
-						}
+					split.forEach((splitString: string, i: number): void => {
+						const words = splitString.split(" ");
+						words.forEach((word: string, i: number):void => {
+							if (word.length !== 2) {
+								words[i] = word.substring(0, 1).toUpperCase() + word.substring(1).toLowerCase();
+							} else {
+								words[i] = word.toUpperCase();
+							}
+						});
+						split[i] = words.join(" ");
 					});
-					if (split.length === 1 && split[0].length > 1) {
+					let ok = false;
+					if (Object.keys(validCountries).includes(split[0])) {
+						ok = true;
+					} else if (Object.keys(validCountryAliases).includes(split[0])) {
+						ok = true;
+						split[0] = Object.keys(validCountryAliases)[Object.keys(validCountryAliases).indexOf(split[0])];
+					}
+					if (split.length === 1 && split[0].length > 1 && ok) {
 						const apiRes = await getCountry(split[0]);
 						if (!(apiRes instanceof Error)) {
 							message.channel.send(new CovidStatsWidget(apiRes, split[0]));
 						} else {
 							message.channel.send(apiRes.message);
 						}
-					} else if (split.length === 2 && split[1].length > 1) {
+					} else if (split.length === 2 && split[1].length > 1 && ok) {
 						const apiRes = await getProvince(split[0], split[1]);
 						if (!(apiRes instanceof Error)) {
 							message.channel.send(new CovidStatsWidget(apiRes, split[1]));
 						} else {
 							message.channel.send(apiRes.message);
 						}
+					} else if (!ok) {
+						message.channel.send('(●︿●) Wasn\'t able to find that place... see `covid?countries` for a list of the ones I know.');
 					} else {
 						message.channel.send('(●︿●) Improper usage... use `covid?help` for help.');
 					}

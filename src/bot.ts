@@ -75,7 +75,7 @@ client.on('message', (message: discord.Message): void => {
 						ok = true;
 					} else if (Object.keys(validCountryAliases).includes(split[0])) {
 						ok = true;
-						split[0] = Object.keys(validCountryAliases)[Object.keys(validCountryAliases).indexOf(split[0])];
+						split[0] = validCountryAliases[split[0]];
 					}
 					if (split.length === 1 && split[0].length > 1 && ok) {
 						const apiRes = await getCountry(split[0]);

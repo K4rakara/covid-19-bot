@@ -16,7 +16,7 @@ A little Discord bot for helping y'all stay safe :^)
 	- Example: `covid?America?New York`
 
 ### Adding the bot to your server
-Currently awaiting approval on [top.gg](https://top.gg).
+Add it [here](https://top.gg/bot/688869816207147081)
 
 ### Running locally
 To run the bot on your own computer, you will need the following:
